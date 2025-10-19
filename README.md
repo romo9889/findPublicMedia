@@ -18,6 +18,41 @@ After configuring authentication, test it:
 ./scripts/test-push.sh
 ```
 
+## 🩵 Step 1 — The Tiny Spark
+
+Goal: Search for a movie and open a legal link in your browser.
+
+### 1) Get a free TMDB API key
+- Create an account at https://www.themoviedb.org/
+- Go to your account settings → API → Request an API key (v3)
+- Copy the key
+
+In your terminal (zsh), set it for this session:
+
+```zsh
+export TMDB_API_KEY="YOUR_TMDB_V3_API_KEY"
+```
+
+Optional: add that line to your `~/.zshrc` to persist it across sessions.
+
+### 2) Run the tiny app
+From the repo root in VS Code’s terminal:
+
+```zsh
+python3 vibe_streamer.py
+```
+
+When prompted, type:
+
+```
+Night of the Living Dead
+```
+
+It will open an Archive.org search page for that film in your default browser.
+
+Tip: you can also run without a key (it will still open an Archive.org search by raw title),
+but the TMDB key improves title/year matching.
+
 ## 📋 Getting Started
 
 This project is set up with Git flow branching:
