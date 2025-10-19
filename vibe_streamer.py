@@ -9,6 +9,7 @@ Usage:
 
 Environment:
   TMDB_API_KEY  Your TMDB v3 API key. If missing, we fall back to Archive.org search by your raw query.
+    OPENSUBTITLES_API_KEY  Optional. If present, used to query OpenSubtitles API for a direct subtitle page link.
 """
 from __future__ import annotations
 
@@ -22,6 +23,7 @@ import webbrowser
 from typing import Optional, Tuple
 
 TMDB_SEARCH_URL = "https://api.themoviedb.org/3/search/movie"
+OPENSUBTITLES_API_URL = "https://api.opensubtitles.com/api/v1/subtitles"
 
 
 def search_tmdb(query: str, api_key: str) -> Optional[Tuple[str, Optional[int]]]:
@@ -68,10 +70,81 @@ def build_archive_search_url(title: str, year: Optional[int] = None) -> str:
     return f"https://archive.org/search?query={urllib.parse.quote_plus(query)}"
 
 
+# --- OpenSubtitles helpers ---
+_LANG_2_TO_OS3 = {
+    # Common mappings to legacy 3-letter codes used by opensubtitles.org search path
+    "en": "eng",
+    "es": "spa",
+    "fr": "fre",  # sometimes 'fra'; 'fre' still supported on site
+    "de": "ger",  # sometimes 'deu'; 'ger' still supported on site
+    "it": "ita",
+    "pt": "por",
+    "ru": "rus",
+}
+
+
+def build_opensubtitles_search_url(title: str, lang: str = "en") -> str:
+    """Build a public search URL on OpenSubtitles if API is unavailable.
+
+    We use the classic opensubtitles.org search URL form for reliability.
+    """
+    code = _LANG_2_TO_OS3.get(lang.lower(), _LANG_2_TO_OS3.get("en", "eng"))
+    return (
+        "https://www.opensubtitles.org/en/search2/"
+        f"sublanguageid-{code}/moviename-{urllib.parse.quote(title)}"
+    )
+
+
+def get_subtitle(title: str, lang: str = "en") -> Optional[str]:
+    """Search OpenSubtitles and return a direct page URL if available.
+
+    - If OPENSUBTITLES_API_KEY is set, query the OpenSubtitles v1 API and
+      return the top result's public URL.
+    - Otherwise (or on error/empty results), return a public search URL.
+    """
+    api_key = os.environ.get("OPENSUBTITLES_API_KEY", "").strip()
+    if not api_key:
+        return build_opensubtitles_search_url(title, lang)
+
+    try:
+        params = {
+            "query": title,
+            "languages": lang.lower(),
+            "type": "movie",
+            "order_by": "download_count",
+            "order_direction": "desc",
+            "page": "1",
+        }
+        url = f"{OPENSUBTITLES_API_URL}?{urllib.parse.urlencode(params)}"
+        req = urllib.request.Request(
+            url,
+            headers={
+                "Api-Key": api_key,
+                "Accept": "application/json",
+            },
+            method="GET",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.load(resp)
+        items = data.get("data") or []
+        if not items:
+            return build_opensubtitles_search_url(title, lang)
+        top = items[0]
+        attrs = top.get("attributes") or {}
+        # New API usually provides a public 'url' under attributes
+        url = attrs.get("url")
+        if url:
+            return url
+        return build_opensubtitles_search_url(title, lang)
+    except Exception:
+        return build_opensubtitles_search_url(title, lang)
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Search TMDB and open an Archive.org link for a movie.")
     parser.add_argument("query", nargs="?", help="Movie title to search")
     parser.add_argument("--no-open", action="store_true", help="Don't open a browser; just print the URL")
+    parser.add_argument("--subs-lang", default="en", help="Subtitle language (ISO 639-1), default: en")
     args = parser.parse_args(argv)
 
     query = args.query
@@ -100,6 +173,13 @@ def main(argv: list[str]) -> int:
 
     url = build_archive_search_url(title, year)
     print(f"Archive.org search URL: {url}")
+
+    # Subtitles
+    sub_url = get_subtitle(title, args.subs_lang)
+    if sub_url:
+        print(f"OpenSubtitles URL: {sub_url}")
+    else:
+        print("OpenSubtitles: No link available.")
 
     if not args.no_open:
         try:
