@@ -174,6 +174,101 @@ python3 stream_now.py --ia-link "https://archive.org/details/HisGirlFriday1940" 
 python3 stream_now.py --ia-link "https://archive.org/details/Charade_201712" --mode plex
 ```
 
+## 🤖 AI-Powered Batch Mount
+
+**NEW!** Describe what you want to watch and automatically mount multiple movies at once!
+
+### Quick Start
+
+```zsh
+# Interactive mode - just run it and describe what you want
+python3 ai_mount_list.py
+
+# Or provide the prompt directly
+python3 ai_mount_list.py --prompt "classic film noir from the 1940s"
+
+# Limit the number of results
+python3 ai_mount_list.py --prompt "sci-fi movies about AI" --limit 10
+
+# Skip confirmation prompt
+python3 ai_mount_list.py --prompt "hitchcock thrillers" --yes
+```
+
+### How It Works
+
+1. **Describe your mood**: Use natural language like:
+   - "classic film noir from the 1940s"
+   - "sci-fi movies about artificial intelligence"
+   - "comedies from the silent era"
+   - "hitchcock psychological thrillers"
+
+2. **AI finds matches**: Searches TMDB and Archive.org using your description
+
+3. **Auto-mount**: Mounts up to 20 movies directly to `~/ArchiveMount/`
+
+4. **Add to Plex**: Point your Plex library at `~/ArchiveMount/` and scan
+
+### Example Session
+
+```zsh
+$ python3 ai_mount_list.py
+
+============================================================
+🎬  AI-POWERED MOVIE MOUNT LIST CREATOR  🎬
+============================================================
+
+📝 Describe the movies you're looking for:
+   Examples:
+   - 'classic film noir from the 1940s'
+   - 'sci-fi movies about artificial intelligence'
+
+Your description: classic film noir from the 1940s
+
+🔍 Searching for movies matching: 'classic film noir from the 1940s'...
+
+✨ Found 5 movies:
+
+#    Title                     Year   Identifier
+1    The Stranger              1946   TheStranger_0
+2    Scarlet Street            1945   ScarletStreet
+3    The Hitch-Hiker           1953   Hitch_Hiker
+4    The Chase                 1946   TheChase_
+5    His Girl Friday           1940   his_girl_friday
+
+🚀 Mount all 5 movies? (y/n): y
+
+[1/5] 🎬 Mounting: The Stranger
+      ✅ Successfully mounted
+
+📊 MOUNT SUMMARY
+Total movies:     5
+✅ Mounted:       5
+
+🎉 Successfully mounted movies are ready for Plex/Jellyfin!
+```
+
+### Options
+
+```zsh
+--prompt "text"       # Natural language movie description
+--limit N             # Max number of movies to find (default: 20)
+--mount-base PATH     # Base directory for mounts (default: ~/ArchiveMount)
+--yes, -y             # Skip confirmation prompt
+```
+
+### Managing Your Mounts
+
+```zsh
+# List all active mounts
+python3 mount_archive.py list
+
+# Unmount a specific movie
+python3 mount_archive.py unmount TheStranger_0
+
+# Unmount everything
+python3 mount_archive.py unmount-all
+```
+
 ## Getting Started
 
 This project is set up with Git flow branching:

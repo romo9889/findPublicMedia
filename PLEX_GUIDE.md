@@ -129,9 +129,54 @@ Plex will scan and identify the movies. This usually takes 30-60 seconds.
 
 ---
 
-## 🎬 Mounting Multiple Movies
+## 🎬 Mounting Movies
 
-### Add Individual Movies
+### Method 1: AI-Powered Batch Mount (EASIEST!) 🤖
+
+**NEW!** The fastest way to build your Plex library - just describe what you want!
+
+```bash
+# Interactive mode - the script will ask what you're looking for
+python3 ai_mount_list.py
+
+# Or provide your description directly
+python3 ai_mount_list.py --prompt "classic film noir from the 1940s"
+
+# Mount sci-fi movies (limit to 10)
+python3 ai_mount_list.py --prompt "sci-fi movies about AI" --limit 10
+
+# Skip confirmation and mount immediately
+python3 ai_mount_list.py --prompt "hitchcock thrillers" --yes
+```
+
+**What happens:**
+1. You describe the movies you want in natural language
+2. AI searches TMDB and Archive.org for matches
+3. Displays up to 20 matching movies
+4. Mounts them all automatically
+5. Ready to add to Plex!
+
+**Example prompts:**
+- "classic film noir from the 1940s"
+- "sci-fi movies about artificial intelligence"
+- "comedies from the silent era"
+- "hitchcock psychological thrillers"
+- "westerns with John Wayne"
+- "romantic comedies from the 1950s"
+
+### Method 2: Individual Movie Mount
+
+Mount specific movies one at a time:
+
+```bash
+# Search and mount via integrated workflow
+python3 vibe_streamer.py "Night of the Living Dead" --plex
+
+# Or mount directly by Archive.org link
+python3 stream_now.py --ia-link "https://archive.org/details/his_girl_friday" --mode plex
+```
+
+### Method 3: Add Multiple Individual Movies
 
 ```bash
 # Mount multiple movies one by one
@@ -144,7 +189,7 @@ Each movie gets its own folder in `~/ArchiveMount/`.
 
 ### Create a Movie Collection
 
-After mounting several movies, they all appear in your single Plex Movies library:
+After mounting several movies (via any method), they all appear in your single Plex Movies library:
 
 ```
 Plex Library: Public Domain Movies
