@@ -204,9 +204,14 @@ python3 ai_mount_list.py --prompt "hitchcock thrillers" --yes
 
 2. **AI finds matches**: Searches TMDB and Archive.org using your description
 
-3. **Auto-mount**: Mounts up to 20 movies directly to `~/ArchiveMount/`
+3. **Organized collections**: Creates a descriptive subfolder for each search query
+   - `~/ArchiveMount/classic_film_noir_1940s/`
+   - `~/ArchiveMount/hitchcock_psychological_thrillers/`
+   - `~/ArchiveMount/silent_comedies_charlie_chaplin/`
 
-4. **Add to Plex**: Point your Plex library at `~/ArchiveMount/` and scan
+4. **Auto-mount**: Mounts up to 20 movies in the collection folder
+
+5. **Add to Plex**: Point your Plex library at the collection folder and scan
 
 ### Example Session
 
@@ -258,6 +263,23 @@ Total movies:     5
 
 ### Managing Your Mounts
 
+Each search creates its own organized collection folder:
+
+```zsh
+~/ArchiveMount/
+├── classic_film_noir_1940s/
+│   ├── TheStranger_0/
+│   ├── ScarletStreet/
+│   └── Hitch_Hiker/
+├── hitchcock_psychological_thrillers/
+│   ├── spellbound1945_202001/
+│   └── gaslight-1944/
+└── silent_comedies_charlie_chaplin/
+    ├── Never_Weaken_1921/
+    └── TheAdventurer1917/
+```
+
+**Manage mounts:**
 ```zsh
 # List all active mounts
 python3 mount_archive.py list

@@ -51,6 +51,56 @@ ARCHIVE_ADV_SEARCH = "https://archive.org/advancedsearch.php"
 ARCHIVE_DOWNLOAD_URL = "https://archive.org/download/"
 
 
+def create_collection_name(prompt: str) -> str:
+    """
+    Create a descriptive, filesystem-safe folder name from the user's prompt.
+    
+    Examples:
+    - "classic film noir from the 1940s" -> "classic_film_noir_1940s"
+    - "sci-fi movies about AI" -> "scifi_movies_ai"
+    - "hitchcock thrillers" -> "hitchcock_thrillers"
+    """
+    # Remove common filler words
+    filler_words = {
+        'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+        'of', 'with', 'from', 'about', 'movies', 'films', 'movie', 'film'
+    }
+    
+    # Convert to lowercase and split into words
+    words = prompt.lower().split()
+    
+    # Filter out filler words and keep meaningful terms
+    meaningful_words = [w for w in words if w not in filler_words]
+    
+    # If we filtered everything, fall back to original
+    if not meaningful_words:
+        meaningful_words = words
+    
+    # Take first 4-5 meaningful words to keep name reasonable
+    selected_words = meaningful_words[:5]
+    
+    # Clean each word: remove punctuation, make filesystem-safe
+    cleaned_words = []
+    for word in selected_words:
+        # Remove non-alphanumeric chars except hyphens
+        cleaned = ''.join(c if c.isalnum() or c == '-' else '' for c in word)
+        if cleaned:
+            cleaned_words.append(cleaned)
+    
+    # Join with underscores
+    collection_name = '_'.join(cleaned_words)
+    
+    # Limit total length to 50 chars
+    if len(collection_name) > 50:
+        collection_name = collection_name[:50].rstrip('_')
+    
+    # If empty after cleaning, use a default
+    if not collection_name:
+        collection_name = "movie_collection"
+    
+    return collection_name
+
+
 def mount_archive_item(identifier: str, mount_path: Path) -> bool:
     """
     Mount a single Archive.org item using rclone.
@@ -410,7 +460,7 @@ def mount_movies(movies: list, mount_base: Path) -> dict:
     return results
 
 
-def print_summary(results: dict):
+def print_summary(results: dict, collection_path: Path = None):
     """Print final summary of mount operation."""
     print("\n" + "="*60)
     print("📊 MOUNT SUMMARY")
@@ -423,7 +473,9 @@ def print_summary(results: dict):
     
     if results["mounted"] > 0:
         print("\n🎉 Successfully mounted movies are ready for Plex/Jellyfin!")
-        print("💡 Add the mount directory to your Plex library to see them.")
+        if collection_path:
+            print(f"� Collection path: {collection_path}")
+        print("�💡 Add the collection directory to your Plex library to see them.")
 
 
 def main(argv: list[str]) -> int:
@@ -491,14 +543,22 @@ def main(argv: list[str]) -> int:
             print("❌ Mount cancelled by user.")
             return 0
     
+    # Create collection-specific subfolder
+    collection_name = create_collection_name(prompt)
+    mount_base = Path(args.mount_base) / collection_name
+    
+    print(f"\n📁 Collection: '{collection_name}'")
+    
     # Mount movies
-    mount_base = Path(args.mount_base)
     results = mount_movies(movies, mount_base)
     
     # Summary
-    print_summary(results)
+    print_summary(results, mount_base)
     
     # Save results to JSON
+    results["collection_name"] = collection_name
+    results["collection_path"] = str(mount_base)
+    results["prompt"] = prompt
     results_file = Path("mount_results.json")
     with open(results_file, "w") as f:
         json.dump(results, f, indent=2)

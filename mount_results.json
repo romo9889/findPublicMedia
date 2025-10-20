@@ -1,128 +1,23 @@
 {
-  "total": 20,
-  "mounted": 20,
+  "total": 2,
+  "mounted": 2,
   "failed": 0,
   "skipped": 0,
   "details": [
     {
-      "title": "The_Absolute_Truth_About_Muhammad_in_the_Bible_With_Arabic_Subtitles",
-      "identifier": "The_Absolute_Truth_About_Muhammad_in_the_Bible_With_Arabic_Subtitles",
+      "title": "Never Weaken",
+      "identifier": "Never_Weaken_1921",
       "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/The_Absolute_Truth_About_Muhammad_in_the_Bible_With_Arabic_Subtitles"
+      "path": "/Users/rosa/ArchiveMount/silent_comedies_charlie_chaplin/Never_Weaken_1921"
     },
     {
-      "title": "Utopia",
-      "identifier": "utopia",
+      "title": "Charlie Chaplin's \"The Adventurer\" (1917)",
+      "identifier": "TheAdventurer1917",
       "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/utopia"
-    },
-    {
-      "title": "Escape From Sobibor",
-      "identifier": "Escape_From_Sobibor.avi",
-      "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/Escape_From_Sobibor.avi"
-    },
-    {
-      "title": "The Child Molester (1964)",
-      "identifier": "CHILD",
-      "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/CHILD"
-    },
-    {
-      "title": "Suddenly",
-      "identifier": "suddenly",
-      "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/suddenly"
-    },
-    {
-      "title": "The Stranger",
-      "identifier": "TheStranger_0",
-      "status": "already_mounted",
-      "path": "/Users/rosa/ArchiveMount/TheStranger_0"
-    },
-    {
-      "title": "79 VJ LOOPS BY Analog Recycling",
-      "identifier": "ANALOG_RECYCLING_VJ_LOOPS",
-      "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/ANALOG_RECYCLING_VJ_LOOPS"
-    },
-    {
-      "title": "The Naked Witch",
-      "identifier": "TheNakedWitch",
-      "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/TheNakedWitch"
-    },
-    {
-      "title": "Make Mine Freedom",
-      "identifier": "MakeMine1948",
-      "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/MakeMine1948"
-    },
-    {
-      "title": "As You Like It",
-      "identifier": "AsYouLikeIt1936",
-      "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/AsYouLikeIt1936"
-    },
-    {
-      "title": "Das Kabinett des Doktor Caligari ( The Cabinet of Dr. Caligari )",
-      "identifier": "DasKabinettdesDoktorCaligariTheCabinetofDrCaligari",
-      "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/DasKabinettdesDoktorCaligariTheCabinetofDrCaligari"
-    },
-    {
-      "title": "Scarlet Street",
-      "identifier": "ScarletStreet",
-      "status": "already_mounted",
-      "path": "/Users/rosa/ArchiveMount/ScarletStreet"
-    },
-    {
-      "title": "Nosferatu, eine Symphonie des Grauens (A Symphony of Horror)",
-      "identifier": "Nosferatu_most_complete_version_93_mins.",
-      "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/Nosferatu_most_complete_version_93_mins."
-    },
-    {
-      "title": "Don't Be a Sucker",
-      "identifier": "DontBeaS1947",
-      "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/DontBeaS1947"
-    },
-    {
-      "title": "Sh\u014dgun (miniseries)",
-      "identifier": "Shogun_Miniseries",
-      "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/Shogun_Miniseries"
-    },
-    {
-      "title": "Triumph of the Will (German: Triumph des Willens)",
-      "identifier": "TriumphOfTheWillgermanTriumphDesWillens",
-      "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/TriumphOfTheWillgermanTriumphDesWillens"
-    },
-    {
-      "title": "Caligari: An Exquisite Corpse",
-      "identifier": "Caligari_AnExquisiteCorpse",
-      "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/Caligari_AnExquisiteCorpse"
-    },
-    {
-      "title": "The Hitch-Hiker",
-      "identifier": "Hitch_Hiker",
-      "status": "already_mounted",
-      "path": "/Users/rosa/ArchiveMount/Hitch_Hiker"
-    },
-    {
-      "title": "A is for Atom",
-      "identifier": "isforAto1953",
-      "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/isforAto1953"
-    },
-    {
-      "title": "Television Commercials (1950s-1960s)",
-      "identifier": "Televisi1960",
-      "status": "mounted",
-      "path": "/Users/rosa/ArchiveMount/Televisi1960"
+      "path": "/Users/rosa/ArchiveMount/silent_comedies_charlie_chaplin/TheAdventurer1917"
     }
-  ]
+  ],
+  "collection_name": "silent_comedies_charlie_chaplin",
+  "collection_path": "/Users/rosa/ArchiveMount/silent_comedies_charlie_chaplin",
+  "prompt": "silent comedies with charlie chaplin"
 }
