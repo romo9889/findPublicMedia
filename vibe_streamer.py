@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 import urllib.parse
 import urllib.request
@@ -24,6 +25,8 @@ from typing import Optional, Tuple
 
 TMDB_SEARCH_URL = "https://api.themoviedb.org/3/search/movie"
 OPENSUBTITLES_API_URL = "https://api.opensubtitles.com/api/v1/subtitles"
+ARCHIVE_ADV_SEARCH = "https://archive.org/advancedsearch.php"
+ARCHIVE_METADATA = "https://archive.org/metadata/"
 
 
 def search_tmdb(query: str, api_key: str) -> Optional[Tuple[str, Optional[int]]]:
@@ -68,6 +71,60 @@ def build_archive_search_url(title: str, year: Optional[int] = None) -> str:
     terms = title if year is None else f"{title} {year}"
     query = f"{terms} AND mediatype:movies"
     return f"https://archive.org/search?query={urllib.parse.quote_plus(query)}"
+
+
+def archive_search_candidates(title: str, year: Optional[int] = None, rows: int = 5) -> list:
+    """Get a few Archive.org candidates via Advanced Search API."""
+    try:
+        terms = f'title:("{title}") AND mediatype:(movies)'
+        if year:
+            terms += f" AND year:{year}"
+        params = {
+            "q": terms,
+            "fl[]": ["identifier", "title", "year"],
+            "sort[]": ["downloads desc", "date desc"],
+            "rows": rows,
+            "output": "json",
+        }
+        url = f"{ARCHIVE_ADV_SEARCH}?{urllib.parse.urlencode(params, doseq=True)}"
+        with urllib.request.urlopen(url, timeout=15) as resp:
+            data = json.load(resp)
+        docs = (((data or {}).get("response") or {}).get("docs") or [])
+        return [
+            {
+                "identifier": d.get("identifier"),
+                "title": d.get("title"),
+                "year": d.get("year"),
+            }
+            for d in docs
+            if d.get("identifier")
+        ]
+    except Exception:
+        return []
+
+
+def pick_best_archive_item(candidates: list, title: str) -> Optional[str]:
+    """Pick the best Archive.org item identifier from candidates."""
+    if not candidates:
+        return None
+    
+    # Simple heuristic: prefer items with title match and avoid trailers
+    tnorm = title.lower().replace(" ", "")
+    for c in candidates:
+        ident = (c.get("identifier") or "").lower()
+        dtitle = (c.get("title") or "").lower()
+        if "trailer" in ident or "trailer" in dtitle:
+            continue
+        if tnorm[:8] in ident or tnorm in dtitle.replace(" ", ""):
+            return c.get("identifier")
+    
+    # Fallback: return first non-trailer
+    for c in candidates:
+        ident = (c.get("identifier") or "").lower()
+        if "trailer" not in ident:
+            return c.get("identifier")
+    
+    return candidates[0].get("identifier") if candidates else None
 
 
 # --- OpenSubtitles helpers ---
@@ -145,6 +202,8 @@ def main(argv: list[str]) -> int:
     parser.add_argument("query", nargs="?", help="Movie title to search")
     parser.add_argument("--no-open", action="store_true", help="Don't open a browser; just print the URL")
     parser.add_argument("--subs-lang", default="en", help="Subtitle language (ISO 639-1), default: en")
+    parser.add_argument("--stream", action="store_true", help="Launch VLC to stream the movie instantly")
+    parser.add_argument("--plex", action="store_true", help="Mount for Plex/Jellyfin via rclone")
     args = parser.parse_args(argv)
 
     query = args.query
@@ -174,6 +233,19 @@ def main(argv: list[str]) -> int:
     url = build_archive_search_url(title, year)
     print(f"Archive.org search URL: {url}")
 
+    # Try to find a specific Archive.org item for streaming
+    archive_identifier = None
+    if args.stream or args.plex:
+        candidates = archive_search_candidates(title, year)
+        archive_identifier = pick_best_archive_item(candidates, title)
+        if archive_identifier:
+            print(f"Archive.org item: https://archive.org/details/{archive_identifier}")
+        else:
+            print("⚠️  No specific Archive.org item found for streaming. Try searching manually.")
+            if not args.no_open:
+                webbrowser.open(url)
+            return 1
+
     # Subtitles
     sub_url = get_subtitle(title, args.subs_lang)
     if sub_url:
@@ -181,6 +253,36 @@ def main(argv: list[str]) -> int:
     else:
         print("OpenSubtitles: No link available.")
 
+    # Streaming modes
+    if args.stream and archive_identifier:
+        print("\n🎬 Launching VLC for instant playback...")
+        stream_cmd = [
+            sys.executable,
+            "stream_now.py",
+            "--ia-link", f"https://archive.org/details/{archive_identifier}",
+            "--mode", "quick"
+        ]
+        try:
+            subprocess.run(stream_cmd)
+        except Exception as e:
+            print(f"Error launching stream_now.py: {e}")
+        return 0
+    
+    if args.plex and archive_identifier:
+        print("\n📺 Setting up Plex mount...")
+        stream_cmd = [
+            sys.executable,
+            "stream_now.py",
+            "--ia-link", f"https://archive.org/details/{archive_identifier}",
+            "--mode", "plex"
+        ]
+        try:
+            subprocess.run(stream_cmd)
+        except Exception as e:
+            print(f"Error launching stream_now.py: {e}")
+        return 0
+
+    # Default: open browser
     if not args.no_open:
         try:
             opened = webbrowser.open(url)

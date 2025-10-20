@@ -59,6 +59,121 @@ You will see two links printed:
 - Archive.org search URL
 - OpenSubtitles URL (direct API result if key provided; otherwise a site search link)
 
+---
+
+## 🎬 Streaming Feature — Instant Playback
+
+**NEW!** Stream movies from Archive.org directly, no downloads required!
+
+### Quick Start
+
+Search for a movie and stream it instantly:
+
+```zsh
+python3 vibe_streamer.py "His Girl Friday" --stream
+```
+
+This will:
+1. Search TMDB for the movie
+2. Find a matching Archive.org item
+3. Launch VLC with the movie and subtitles loaded
+
+### Streaming Modes
+
+**Option 1: Integrated Search + Stream**
+```zsh
+# Search and play in one command
+python3 vibe_streamer.py "Charade" --stream
+
+# Search and mount for Plex
+python3 vibe_streamer.py "Night of the Living Dead" --plex
+```
+
+**Option 2: Direct Stream (if you know the Archive.org link)**
+```zsh
+# Quick play in VLC
+python3 stream_now.py --ia-link "https://archive.org/details/HisGirlFriday1940" --mode quick
+
+# Mount for Plex/Jellyfin
+python3 stream_now.py --ia-link "https://archive.org/details/HisGirlFriday1940" --mode plex
+```
+
+### Prerequisites
+
+**For Quick Play mode (VLC):**
+- VLC media player
+  ```zsh
+  brew install --cask vlc  # macOS
+  # or: sudo apt install vlc  # Linux
+  ```
+
+**For Plex mode (rclone mount):**
+- rclone
+  ```zsh
+  brew install rclone  # macOS
+  # or: curl https://rclone.org/install.sh | sudo bash  # Linux
+  ```
+- Optional: pysubs2 for subtitle conversion
+  ```zsh
+  pip install pysubs2
+  ```
+
+### Quick Play Mode
+
+Instantly play a movie with subtitles in VLC:
+
+```zsh
+python3 stream_now.py --ia-link "https://archive.org/details/HisGirlFriday1940" --mode quick
+```
+
+This will:
+1. Fetch Archive.org metadata
+2. Find the best video file (.mp4/.ogv)
+3. Find matching subtitles (.srt/.vtt)
+4. Launch VLC with both loaded
+
+### Plex/Jellyfin Mode
+
+Mount an Archive.org item as a local folder for streaming through Plex:
+
+```zsh
+python3 stream_now.py --ia-link "https://archive.org/details/HisGirlFriday1940" --mode plex
+```
+
+This will:
+1. Set up rclone HTTP remote
+2. Mount the item to `~/ArchiveMount/<identifier>`
+3. Print instructions to add the folder to Plex/Jellyfin
+
+### Managing Mounts
+
+Use the helper script to manage your Archive.org mounts:
+
+```zsh
+# List all active mounts
+python3 mount_archive.py list
+
+# Unmount a specific item
+python3 mount_archive.py unmount HisGirlFriday1940
+
+# Unmount all items
+python3 mount_archive.py unmount-all
+```
+
+### Examples
+
+**Classic films available on Archive.org:**
+```zsh
+# Night of the Living Dead (1968)
+python3 stream_now.py --ia-link "https://archive.org/details/night_of_the_living_dead" --mode quick
+
+# His Girl Friday (1940)
+python3 stream_now.py --ia-link "https://archive.org/details/HisGirlFriday1940" --mode quick
+
+# Charade (1963)
+python3 stream_now.py --ia-link "https://archive.org/details/Charade_201712" --mode plex
+```
+
 ## Getting Started
 
 This project is set up with Git flow branching:
