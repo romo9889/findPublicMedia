@@ -254,8 +254,8 @@ def mount_for_plex(identifier: str, video_url: str, subtitle_url: Optional[str],
             print("   curl https://rclone.org/install.sh | sudo bash")
         sys.exit(1)
     
-    # Create mount point
-    mount_dir = Path.home() / "ArchiveMount" / identifier
+    # Create mount point in "searched_for" collection
+    mount_dir = Path.home() / "ArchiveMount" / "searched_for" / identifier
     mount_dir.mkdir(parents=True, exist_ok=True)
     
     # Extract base URL for the item
