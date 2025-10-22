@@ -114,6 +114,8 @@ Temporary Items
 *.pem
 .credentials
 auth.json
+*server_config.json
+*_config.json
 
 # IDE files
 .vscode/

@@ -1,240 +1,314 @@
 #!/usr/bin/env python3
 """
-Server configuration for Plex library.
+Server Setup for Plex Library (Multi-Project Server Compatible)
 
-This script helps you:
-1. Set up your server connection
-2. Copy PlexMovies to the server
-3. Test the connection
-4. Update mount scripts to use server location
+This script helps you set up Plex library hosting on a server that's
+already running other projects (shop, n8n, etc.) without interference.
+
+Security:
+- Credentials are NEVER stored in git
+- Config saved to ~/.plex_server_config.json (local only, gitignored)
+- File permissions set to 600 (user read/write only)
 """
+
 import os
+import sys
+import json
 import subprocess
 from pathlib import Path
-import json
 
-CONFIG_FILE = Path.home() / ".plex_server_config.json"
+
+CONFIG_PATH = os.path.expanduser("~/.plex_server_config.json")
+
+
+def print_header():
+    """Print welcome message."""
+    print("\n" + "="*70)
+    print("  🎬 Plex Library Server Setup (Multi-Project Server)")
+    print("="*70)
+    print("\n⚠️  SECURITY: All credentials stored locally only")
+    print(f"   Config file: {CONFIG_PATH} (gitignored)")
+    print("\n📌 This server can host multiple projects simultaneously:")
+    print("   ✓ Shop (existing)")
+    print("   ✓ n8n (planned)")  
+    print("   ✓ Plex Movies (this setup)")
+    print()
 
 
 def get_server_config():
-    """Get or create server configuration."""
-    if CONFIG_FILE.exists():
-        with open(CONFIG_FILE) as f:
-            return json.load(f)
+    """
+    Interactive prompts to get server configuration.
+    Asks for IP and credentials without storing passwords in git.
+    """
+    print_header()
     
-    print("\n" + "="*60)
-    print("📡 SERVER CONFIGURATION")
-    print("="*60)
-    print("\nLet's set up your server connection.")
-    print("\nCommon options:")
-    print("1. Network share (SMB/AFP): e.g., /Volumes/ServerName/Movies")
-    print("2. SSH/SFTP server: e.g., user@server:/path/to/movies")
-    print("3. NAS: e.g., /Volumes/NAS/Media/Movies")
-    print("4. External drive: e.g., /Volumes/MyDrive/PlexMovies")
+    config = {}
+    
+    # Get server details
+    print("📡 Server Connection Details:")
+    print("-" * 40)
+    config['host'] = input("Server IP address: ").strip()
+    config['username'] = input("SSH Username: ").strip()
+    config['port'] = input("SSH Port [22]: ").strip() or "22"
+    
+    # Suggest common paths for media storage
+    print("\n📁 Where to store Plex movies on your server?")
+    print("   Suggested paths:")
+    print(f"   • /home/{config['username']}/PlexMovies (user directory)")
+    print("   • /var/media/PlexMovies (common for web servers)")
+    print("   • /opt/plex/movies (dedicated opt directory)")
+    print("   • /mnt/storage/PlexMovies (mounted storage)")
     print()
     
-    server_type = input("Server type (smb/ssh/nas/local): ").strip().lower()
+    default_path = f"/home/{config['username']}/PlexMovies"
+    remote_path = input(f"Remote path [{default_path}]: ").strip()
+    config['remote_path'] = remote_path if remote_path else default_path
     
-    if server_type == "smb":
-        print("\nSMB/Network Share Configuration:")
-        server_address = input("  Server address (e.g., //192.168.1.100/Movies): ").strip()
-        username = input("  Username (or press Enter if none): ").strip()
-        mount_point = input("  Local mount point (e.g., /Volumes/ServerMovies): ").strip()
-        
-        config = {
-            "type": "smb",
-            "address": server_address,
-            "username": username if username else None,
-            "mount_point": mount_point,
-            "plex_path": f"{mount_point}/PlexMovies"
-        }
+    # Check for SSH key
+    print("\n🔐 Authentication Method:")
+    print("-" * 40)
+    ssh_key = os.path.expanduser("~/.ssh/id_rsa")
+    ssh_key_pub = os.path.expanduser("~/.ssh/id_ed25519")
     
-    elif server_type == "ssh":
-        print("\nSSH/SFTP Configuration:")
-        ssh_host = input("  SSH host (e.g., user@192.168.1.100): ").strip()
-        remote_path = input("  Remote path (e.g., /mnt/media/PlexMovies): ").strip()
-        
-        config = {
-            "type": "ssh",
-            "host": ssh_host,
-            "remote_path": remote_path,
-            "plex_path": remote_path
-        }
+    if os.path.exists(ssh_key) or os.path.exists(ssh_key_pub):
+        key_path = ssh_key if os.path.exists(ssh_key) else ssh_key_pub
+        print(f"✓ Found SSH key: {key_path}")
+        config['use_key'] = True
+        print("  Using key-based authentication (recommended)")
+    else:
+        print("⚠️  No SSH key found")
+        print("  You'll be prompted for password during copy")
+        print("\n  To set up SSH key (recommended for security):")
+        print(f"    ssh-copy-id -p {config['port']} {config['username']}@{config['host']}")
+        print()
+        use_password = input("Continue with password authentication? (y/n): ").strip().lower()
+        if use_password != 'y':
+            print("\nSetup cancelled. Please set up SSH key first.")
+            sys.exit(0)
+        config['use_key'] = False
     
-    elif server_type == "local":
-        print("\nLocal/External Drive Configuration:")
-        local_path = input("  Path (e.g., /Volumes/MyDrive/PlexMovies): ").strip()
-        
-        config = {
-            "type": "local",
-            "plex_path": local_path
-        }
-    
-    else:  # nas or other
-        print("\nNAS/Other Configuration:")
-        path = input("  Full path to Plex library: ").strip()
-        
-        config = {
-            "type": "nas",
-            "plex_path": path
-        }
-    
-    # Save config
-    with open(CONFIG_FILE, 'w') as f:
-        json.dump(config, f, indent=2)
-    
-    print(f"\n✅ Configuration saved to: {CONFIG_FILE}")
     return config
 
 
 def test_connection(config):
-    """Test server connection."""
-    print("\n🔍 Testing connection...")
+    """
+    Test SSH connection and verify/create remote directory.
+    """
+    print("\n🔍 Testing Connection")
+    print("=" * 70)
     
-    server_type = config["type"]
-    plex_path = config["plex_path"]
+    # Test SSH connection
+    print(f"\n1️⃣  Testing SSH connection to {config['host']}...")
+    cmd = [
+        'ssh',
+        '-p', config['port'],
+        '-o', 'ConnectTimeout=10',
+        f"{config['username']}@{config['host']}",
+        'echo "✓ SSH connection successful"'
+    ]
     
-    if server_type == "local" or server_type == "nas":
-        # Test local path
-        path = Path(plex_path)
-        if path.exists():
-            print(f"✅ Path accessible: {plex_path}")
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+        if result.returncode == 0:
+            print(result.stdout.strip())
+        else:
+            print(f"✗ SSH connection failed!")
+            print(f"   Error: {result.stderr.strip()}")
+            print("\n   Troubleshooting:")
+            print(f"   • Can you SSH manually? Try: ssh -p {config['port']} {config['username']}@{config['host']}")
+            print("   • Check if server is running and accessible")
+            print("   • Verify firewall allows SSH connections")
+            return False
+    except subprocess.TimeoutExpired:
+        print("✗ Connection timeout (server not responding)")
+        return False
+    except Exception as e:
+        print(f"✗ Error: {e}")
+        return False
+    
+    # Check/create remote directory
+    print(f"\n2️⃣  Preparing directory: {config['remote_path']}...")
+    check_cmd = [
+        'ssh',
+        '-p', config['port'],
+        f"{config['username']}@{config['host']}",
+        f'mkdir -p "{config["remote_path"]}" && echo "✓ Directory ready"'
+    ]
+    
+    try:
+        result = subprocess.run(check_cmd, capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            print(result.stdout.strip())
+            print(f"   Path: {config['username']}@{config['host']}:{config['remote_path']}")
             return True
         else:
-            print(f"❌ Path not accessible: {plex_path}")
-            print("   Make sure the drive/share is mounted")
+            print(f"✗ Could not create directory!")
+            print(f"   Error: {result.stderr.strip()}")
+            print("\n   You may need to:")
+            print(f"   • Create directory manually: mkdir -p {config['remote_path']}")
+            print("   • Check write permissions")
             return False
-    
-    elif server_type == "smb":
-        # Test SMB mount
-        mount_point = config["mount_point"]
-        path = Path(mount_point)
-        if path.exists():
-            print(f"✅ SMB share mounted: {mount_point}")
-            return True
-        else:
-            print(f"❌ SMB share not mounted: {mount_point}")
-            print(f"   To mount: mount_smbfs {config['address']} {mount_point}")
-            return False
-    
-    elif server_type == "ssh":
-        # Test SSH connection
-        try:
-            result = subprocess.run(
-                ["ssh", "-o", "ConnectTimeout=5", config["host"], "echo", "connected"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-            if result.returncode == 0:
-                print(f"✅ SSH connection successful: {config['host']}")
-                return True
-            else:
-                print(f"❌ SSH connection failed")
-                return False
-        except subprocess.TimeoutExpired:
-            print(f"❌ SSH connection timeout")
-            return False
-        except Exception as e:
-            print(f"❌ Error: {e}")
-            return False
-    
-    return False
+    except Exception as e:
+        print(f"✗ Error: {e}")
+        return False
 
 
 def copy_to_server(config):
-    """Copy PlexMovies to server."""
-    local_plex = Path.home() / "PlexMovies"
-    server_plex = config["plex_path"]
-    server_type = config["type"]
+    """
+    Copy Plex library to server using rsync.
+    Follows symlinks to copy actual video files.
+    """
+    print("\n📦 Copying Plex Library to Server")
+    print("=" * 70)
     
-    print(f"\n📦 Copying PlexMovies to server...")
-    print(f"   From: {local_plex}")
-    print(f"   To:   {server_plex}")
+    local_path = os.path.expanduser("~/PlexMovies/")
     
-    if not local_plex.exists():
-        print("❌ Local PlexMovies directory not found!")
+    if not os.path.exists(local_path):
+        print(f"\n✗ Local Plex library not found: {local_path}")
+        print("\n   Please create the library first:")
+        print("   python3 create_plex_library.py")
         return False
+    
+    # Count files
+    try:
+        file_count = 0
+        dir_count = 0
+        for root, dirs, files in os.walk(local_path):
+            dir_count += len(dirs)
+            file_count += len(files)
+        print(f"\n📊 Found {file_count} files in {dir_count} directories")
+    except Exception as e:
+        print(f"   Warning: Could not count files: {e}")
+    
+    # Build rsync command
+    # -L flag follows symlinks (copies actual files, not symlinks)
+    cmd = [
+        'rsync',
+        '-avzL',  # archive, verbose, compress, follow symlinks
+        '--progress',
+        '--stats',
+        '-e', f'ssh -p {config["port"]}',
+        local_path,
+        f'{config["username"]}@{config["host"]}:{config["remote_path"]}/'
+    ]
+    
+    print(f"\n📁 Source: {local_path}")
+    print(f"📁 Destination: {config['username']}@{config['host']}:{config['remote_path']}/")
+    print("\n⚠️  Important:")
+    print("   • This copies actual video files (following symlinks)")
+    print("   • Depending on file size and network speed, this may take a while")
+    print("   • You can press Ctrl+C to cancel")
+    print()
+    
+    proceed = input("Start copy? (y/n): ").strip().lower()
+    if proceed != 'y':
+        print("\n❌ Copy cancelled")
+        return False
+    
+    print("\n🚀 Starting copy...")
+    print("-" * 70)
     
     try:
-        if server_type == "ssh":
-            # Use rsync over SSH
-            cmd = [
-                "rsync", "-avz", "--progress",
-                f"{local_plex}/",
-                f"{config['host']}:{server_plex}/"
-            ]
-            print(f"\nRunning: {' '.join(cmd)}")
-            subprocess.run(cmd, check=True)
-        
+        result = subprocess.run(cmd, text=True)
+        if result.returncode == 0:
+            print("\n" + "=" * 70)
+            print("✅ Copy completed successfully!")
+            print("=" * 70)
+            return True
         else:
-            # Use rsync for local/SMB/NAS
-            Path(server_plex).parent.mkdir(parents=True, exist_ok=True)
-            cmd = [
-                "rsync", "-av", "--progress",
-                f"{local_plex}/",
-                f"{server_plex}/"
-            ]
-            print(f"\nRunning: {' '.join(cmd)}")
-            subprocess.run(cmd, check=True)
-        
-        print("\n✅ Copy completed successfully!")
-        return True
-    
-    except subprocess.CalledProcessError as e:
-        print(f"\n❌ Copy failed: {e}")
+            print("\n✗ Copy failed (exit code: {result.returncode})")
+            return False
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Copy interrupted by user")
+        print("   Files may be partially copied")
         return False
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\n✗ Error during copy: {e}")
         return False
+
+
+def save_config(config):
+    """Save configuration to local file."""
+    try:
+        # Don't save passwords
+        config_to_save = {k: v for k, v in config.items() if k != 'password'}
+        
+        with open(CONFIG_PATH, 'w') as f:
+            json.dump(config_to_save, f, indent=2)
+        
+        # Set secure permissions (user read/write only)
+        os.chmod(CONFIG_PATH, 0o600)
+        
+        print(f"\n✓ Configuration saved to: {CONFIG_PATH}")
+        print("  (File permissions: 600 - secure)")
+        return True
+    except Exception as e:
+        print(f"\n⚠️  Warning: Could not save config: {e}")
+        return False
+
+
+def print_next_steps(config):
+    """Print next steps for user."""
+    print("\n" + "="*70)
+    print("  ✅ Setup Complete!")
+    print("="*70)
+    
+    print("\n📋 Next Steps:")
+    print("-" * 70)
+    
+    print("\n1️⃣  Verify files on your server:")
+    print(f"    ssh -p {config['port']} {config['username']}@{config['host']}")
+    print(f"    ls -la {config['remote_path']}/PlexMovies/")
+    print("    # You should see your organized movie folders")
+    
+    print("\n2️⃣  Configure Plex on your server:")
+    print("    • Install Plex Media Server on your server")
+    print(f"    • Add Movie library pointing to: {config['remote_path']}/PlexMovies/")
+    print("    • Plex will scan and organize your movies")
+    
+    print("\n3️⃣  (Optional) Mount new movies directly to server:")
+    print("    python3 update_mount_scripts.py")
+    print("    ⚠️  Only after verifying files are on server!")
+    
+    print("\n📊 Your Server Now Hosts:")
+    print("-" * 70)
+    print("    ✓ Shop (your existing project)")
+    print("    ✓ n8n (planned)")
+    print(f"    ✓ Plex Movies → {config['remote_path']}/PlexMovies/")
+    print("\n    All services run independently without conflicts! 🎉")
+    print()
 
 
 def main():
-    """Main entry point."""
-    print("\n" + "="*60)
-    print("🎬 PLEX SERVER SETUP")
-    print("="*60)
-    
-    # Get or create config
-    config = get_server_config()
-    
-    print("\n" + "="*60)
-    print("Current Configuration:")
-    print("="*60)
-    for key, value in config.items():
-        print(f"  {key}: {value}")
-    
-    # Test connection
-    if not test_connection(config):
-        print("\n⚠️  Connection test failed!")
-        print("   Fix the connection and run this script again.")
-        return 1
-    
-    # Ask to copy
-    print("\n" + "="*60)
-    response = input("\n🚀 Copy PlexMovies to server now? (y/n): ").strip().lower()
-    
-    if response == 'y':
-        if copy_to_server(config):
-            print("\n" + "="*60)
-            print("✅ SETUP COMPLETE!")
-            print("="*60)
-            print(f"\n📁 Server Plex library: {config['plex_path']}")
-            print("\n💡 Next steps:")
-            print("   1. Verify files on server")
-            print("   2. Point Plex server to the new location")
-            print("   3. Run: python3 update_mount_scripts.py")
-            print("      (This will update all mount scripts to use server)")
-            return 0
-        else:
-            print("\n❌ Copy failed. Check errors above.")
-            return 1
-    else:
-        print("\n⏭️  Skipped copy.")
-        print("   Run this script again when ready to copy.")
-        return 0
+    """Main setup flow."""
+    try:
+        config = get_server_config()
+        
+        if not test_connection(config):
+            print("\n❌ Setup failed: Could not connect to server")
+            print("\n   Please check:")
+            print("   • Server IP and port are correct")
+            print("   • SSH service is running on server")
+            print("   • Firewall allows SSH connections")
+            print("   • Your credentials are correct")
+            sys.exit(1)
+        
+        if not copy_to_server(config):
+            print("\n❌ Setup failed: Could not copy files")
+            sys.exit(1)
+        
+        save_config(config)
+        print_next_steps(config)
+        
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Setup cancelled by user")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    import sys
-    sys.exit(main())
+    main()
