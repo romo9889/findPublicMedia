@@ -460,6 +460,27 @@ def mount_movies(movies: list, mount_base: Path) -> dict:
     return results
 
 
+def update_plex_library():
+    """Run the Plex library organizer to update symlinks."""
+    try:
+        print("\n🔄 Updating Plex library...")
+        result = subprocess.run(
+            [sys.executable, "create_plex_library.py"],
+            check=True,
+            capture_output=True,
+            text=True,
+            cwd=Path(__file__).parent
+        )
+        print("✅ Plex library updated!")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️  Plex library update failed")
+        return False
+    except FileNotFoundError:
+        print("⚠️  create_plex_library.py not found - skipping Plex update")
+        return False
+
+
 def print_summary(results: dict, collection_path: Path = None):
     """Print final summary of mount operation."""
     print("\n" + "="*60)
@@ -551,6 +572,10 @@ def main(argv: list[str]) -> int:
     
     # Mount movies
     results = mount_movies(movies, mount_base)
+    
+    # Update Plex library
+    if results["mounted"] > 0:
+        update_plex_library()
     
     # Summary
     print_summary(results, mount_base)

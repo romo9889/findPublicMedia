@@ -300,15 +300,25 @@ url = {base_url}
         
         print("\n✅ SUCCESS! Archive.org item mounted for Plex.")
         print(f"\n📁 Mount Location: {mount_dir}")
+        
+        # Update Plex library
+        try:
+            subprocess.run(
+                [sys.executable, str(Path(__file__).parent / "create_plex_library.py")],
+                check=True,
+                capture_output=True,
+                text=True
+            )
+            print("✅ Movie added to Plex library at ~/PlexMovies/")
+        except:
+            pass  # Silently fail if script not found
+        
         print(f"\n📺 Next Steps:")
-        print(f"   1. Open Plex or Jellyfin")
-        print(f"   2. Add a new Movie library")
-        print(f"   3. Point it to: {mount_dir}")
-        print(f"   4. Scan library and enjoy!\n")
+        print(f"   1. Open Plex Web")
+        print(f"   2. Scan your Movies library")
+        print(f"   3. Enjoy!\n")
         print(f"🔧 To unmount later, run:")
-        print(f"   umount {mount_dir}  (Linux)")
-        print(f"   or")
-        print(f"   fusermount -u {mount_dir}  (macOS/Linux with FUSE)")
+        print(f"   python3 mount_archive.py unmount {identifier}")
         
     except subprocess.CalledProcessError as e:
         log("error", f"rclone mount failed: {e}")
