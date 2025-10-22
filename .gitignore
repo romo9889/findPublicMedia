@@ -126,3 +126,12 @@ auth.json
 dist/
 build/
 out/
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Project-specific ignores
+translate_and_sync.py
+mount_results.json
