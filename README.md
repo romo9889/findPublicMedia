@@ -4,6 +4,20 @@ Mount movies from Archive.org to your Plex server or local machine with proper P
 
 ## 🚀 Quick Start
 
+### Option 1: Web Interface (Easiest! 🌐)
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Start web server
+python3 web_app.py
+```
+
+Then open http://localhost:5000 in your browser!
+
+### Option 2: Command Line
+
 ```bash
 python3 main.py
 ```
@@ -17,6 +31,7 @@ The app will ask you:
 ### For All Users
 - Python 3.8+
 - Archive.org public domain content only
+- **Flask** (for web interface): `pip install -r requirements.txt`
 
 ### For Local Mounting
 - **rclone**: `brew install rclone` (macOS) or `curl https://rclone.org/install.sh | sudo bash` (Linux)

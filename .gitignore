@@ -134,6 +134,13 @@ out/
 venv/
 env/
 
+# Flask
+__pycache__/
+*.pyc
+*.pyo
+instance/
+.pytest_cache/
+
 # Project-specific ignores
 mount_results.json
 mount_list.json

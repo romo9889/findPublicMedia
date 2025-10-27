@@ -1,0 +1,7 @@
+# Public Media Mounter - Python Dependencies
+
+# Web interface
+Flask>=2.3.0
+
+# Optional: Better subtitle conversion
+pysubs2>=1.6.0

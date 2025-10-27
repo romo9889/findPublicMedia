@@ -1,5 +1,42 @@
 # Changelog
 
+## v2.1.0 - Web Interface (2025-10-27)
+
+### ✨ New Features
+- **Web Interface (`web_app.py`)**: Beautiful browser-based UI for mounting movies
+  - Modern, responsive design with gradient theme
+  - Mount collections via AI search form
+  - Mount single movies with optional metadata
+  - Server status indicator
+  - Real-time feedback and examples
+  - Mobile-friendly interface
+- **HTML Template (`templates/index.html`)**: Clean, user-friendly web UI
+- **Requirements File (`requirements.txt`)**: Python dependencies for easy setup
+- **Web Interface Guide (`WEB_INTERFACE.md`)**: Complete documentation for web UI
+
+### 📝 Updated Documentation
+- **README.md**: Added web interface as primary option
+- **.gitignore**: Added Flask cache directories
+
+### 🎨 Features
+The web interface provides:
+- Two-tab interface: Collections and Single Movies
+- Natural language input for AI search
+- Archive.org link/identifier input
+- Server/local mounting toggle
+- Example prompts and IDs
+- Success/error notifications
+- Background processing with visual feedback
+
+### 🚀 Usage
+```bash
+python3 -m pip install -r requirements.txt
+python3 web_app.py
+# Open http://localhost:5000
+```
+
+---
+
 ## v2.0.0 - Streamlined Release (2025-10-27)
 
 ### 🎯 Major Refactoring
