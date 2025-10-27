@@ -103,17 +103,18 @@ def test_connection(config):
         'ssh',
         '-p', config['port'],
         '-o', 'ConnectTimeout=10',
+        '-o', 'BatchMode=no',  # Allow interactive prompts
         f"{config['username']}@{config['host']}",
         'echo "✓ SSH connection successful"'
     ]
     
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+        # Run without capturing output so passphrase prompt works
+        result = subprocess.run(cmd, timeout=30)
         if result.returncode == 0:
-            print(result.stdout.strip())
+            print("✓ SSH connection successful")
         else:
             print(f"✗ SSH connection failed!")
-            print(f"   Error: {result.stderr.strip()}")
             print("\n   Troubleshooting:")
             print(f"   • Can you SSH manually? Try: ssh -p {config['port']} {config['username']}@{config['host']}")
             print("   • Check if server is running and accessible")
@@ -131,19 +132,20 @@ def test_connection(config):
     check_cmd = [
         'ssh',
         '-p', config['port'],
+        '-o', 'BatchMode=no',  # Allow interactive prompts
         f"{config['username']}@{config['host']}",
         f'mkdir -p "{config["remote_path"]}" && echo "✓ Directory ready"'
     ]
     
     try:
-        result = subprocess.run(check_cmd, capture_output=True, text=True, timeout=10)
+        # Run without capturing output so passphrase prompt works
+        result = subprocess.run(check_cmd, timeout=30)
         if result.returncode == 0:
-            print(result.stdout.strip())
+            print("✓ Directory ready")
             print(f"   Path: {config['username']}@{config['host']}:{config['remote_path']}")
             return True
         else:
             print(f"✗ Could not create directory!")
-            print(f"   Error: {result.stderr.strip()}")
             print("\n   You may need to:")
             print(f"   • Create directory manually: mkdir -p {config['remote_path']}")
             print("   • Check write permissions")
@@ -187,7 +189,7 @@ def copy_to_server(config):
         '-avzL',  # archive, verbose, compress, follow symlinks
         '--progress',
         '--stats',
-        '-e', f'ssh -p {config["port"]}',
+        '-e', f'ssh -p {config["port"]} -o BatchMode=no',  # Allow interactive passphrase
         local_path,
         f'{config["username"]}@{config["host"]}:{config["remote_path"]}/'
     ]

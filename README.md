@@ -1,305 +1,210 @@
-# findPublicMedia
+# Public Media Mounter
 
-A project to find and manage public media resources.
+Mount movies from Archive.org to your Plex server or local machine with proper Plex folder structure.
 
-## 🩵 Step 1 — The Tiny Spark
+## 🚀 Quick Start
 
-Goal: Search for a movie and open a legal link in your browser.
-
-### 1) Get a free TMDB API key
-- Create an account at https://www.themoviedb.org/
-- Go to your account settings → API → Request an API key (v3)
-- Copy the key
-
-In your terminal (zsh), set it for this session:
-
-```zsh
-export TMDB_API_KEY="YOUR_TMDB_V3_API_KEY"
+```bash
+python3 main.py
 ```
 
-Optional: add that line to your `~/.zshrc` to persist it across sessions.
+The app will ask you:
+1. **What to mount**: Collection (batch) or Single movie
+2. **Where to mount**: Server (remote Plex) or Local
 
-### 2) Run the tiny app
-From the repo root in VS Code’s terminal:
+## 📋 Prerequisites
 
-```zsh
-python3 vibe_streamer.py
+### For All Users
+- Python 3.8+
+- Archive.org public domain content only
+
+### For Local Mounting
+- **rclone**: `brew install rclone` (macOS) or `curl https://rclone.org/install.sh | sudo bash` (Linux)
+- Mounts to: `~/ArchiveMount/<collection_name>/`
+
+### For Server Mounting (Recommended)
+- A remote server with SSH access
+- rclone installed on the server
+- Plex Media Server installed on the server
+- SSH key authentication set up
+
+## 🎬 Features
+
+### 1. Mount a Collection (AI-Powered)
+Search using natural language and mount multiple movies at once:
+
+```
+Your description: classic film noir from the 1940s
+How many movies: 15
 ```
 
-When prompted, type:
+The app will:
+- Search TMDB and Archive.org
+- Find up to 15 matching movies
+- Mount them with proper Plex structure: `Movie Name (Year)/Movie Name (Year).ext`
+
+Examples:
+- "sci-fi movies about AI"
+- "hitchcock thrillers"
+- "silent comedies charlie chaplin"
+
+### 2. Mount a Single Movie
+Mount one specific movie:
 
 ```
-Night of the Living Dead
+Archive.org link/ID: https://archive.org/details/HisGirlFriday1940
 ```
 
-It will open an Archive.org search page for that film in your default browser.
-
-Tip: you can also run without a key (it will still open an Archive.org search by raw title),
-but the TMDB key improves title/year matching.
-
-## 🧩 Step 2 — Subtitles (Optional)
-
-Add a function to retrieve a subtitle link from OpenSubtitles.
-
-### 1) Optional: OpenSubtitles API key
-You can use the public site without a key, or provide an API key for better results.
-
-```zsh
-export OPENSUBTITLES_API_KEY="YOUR_OS_API_KEY"
+Or just the identifier:
+```
+Archive.org link/ID: HisGirlFriday1940
 ```
 
-### 2) Run with a language code
-Default language is English (`en`). You can change it, for example Spanish (`es`):
+## 🖥️ Server Setup
 
-```zsh
-python3 vibe_streamer.py --no-open --subs-lang es "Night of the Living Dead"
+First time using server mode? The app will guide you through setup:
+
+1. SSH host (e.g., `138.199.161.86`)
+2. SSH user (e.g., `root`)
+3. SSH port (default: `22`)
+4. Remote mount path (e.g., `/home/root/PlexMovies`)
+
+Server requirements:
+- Ubuntu/Debian Linux
+- rclone installed: `curl https://rclone.org/install.sh | sudo bash`
+- Plex Media Server installed
+- SSH key authentication configured
+
+### Server Configuration
+
+Config is saved to `~/.plex_server_config.json` (not committed to git):
+
+```json
+{
+  "host": "138.199.161.86",
+  "user": "root",
+  "port": 22,
+  "remote_path": "/home/root/PlexMovies"
+}
 ```
 
-You will see two links printed:
-- Archive.org search URL
-- OpenSubtitles URL (direct API result if key provided; otherwise a site search link)
+## 📁 Plex Structure
+
+All mounts follow Plex best practices:
+
+```
+PlexMovies/
+├── His Girl Friday (1940)/
+│   └── His Girl Friday (1940).mp4  → symlink to raw mount
+├── Night of the Living Dead (1968)/
+│   └── Night of the Living Dead (1968).mp4  → symlink
+└── ArchiveMount_raw/
+    ├── HisGirlFriday1940/
+    │   └── [actual rclone mount files]
+    └── night_of_the_living_dead/
+        └── [actual rclone mount files]
+```
+
+### Why This Structure?
+
+- **Plex-compliant naming**: Movie Name (Year)/Movie Name (Year).ext
+- **Efficient storage**: Symlinks point to actual mounts (no duplication)
+- **Clean library**: Only properly named folders appear in Plex
+- **Raw access**: Original mounts preserved in `ArchiveMount_raw/`
+
+## 🔧 Advanced Usage
+
+### Environment Variables
+
+**Optional TMDB API Key** (improves search results):
+```bash
+export TMDB_API_KEY="your_tmdb_v3_api_key"
+```
+
+Get a free key at https://www.themoviedb.org/settings/api
+
+### Direct Script Usage
+
+If you prefer command-line:
+
+```bash
+# Mount a collection on server
+python3 ai_mount_list.py --server --prompt "film noir 1940s" --limit 20
+
+# Mount single movie on server
+python3 stream_now.py --ia-link "https://archive.org/details/..." --mode server
+
+# Mount single movie locally
+python3 stream_now.py --ia-link "https://archive.org/details/..." --mode plex
+```
+
+## 📚 How It Works
+
+### Server Mounting
+1. SSH to your server
+2. Create rclone HTTP remote for Archive.org item
+3. Mount item to `ArchiveMount_raw/<identifier>/`
+4. Find best video file (mp4 > mkv > avi)
+5. Create Plex folder: `Movie Name (Year)/`
+6. Create symlink to best video with Plex-compliant name
+7. Tell Plex to scan library
+
+### Local Mounting
+1. Create rclone HTTP remote for Archive.org item
+2. Mount to `~/ArchiveMount/<collection>/<identifier>/`
+3. Add mount location to your Plex library
+4. Plex scans and imports
+
+## 🛠️ Troubleshooting
+
+### "rclone not found"
+```bash
+# macOS
+brew install rclone
+
+# Linux
+curl https://rclone.org/install.sh | sudo bash
+```
+
+### "SSH connection failed"
+- Ensure SSH key authentication is set up
+- Test: `ssh user@your-server "echo OK"`
+- Add key to agent: `ssh-add ~/.ssh/id_rsa`
+
+### "No video files found"
+Some Archive.org items don't contain video files. The script will skip these automatically.
+
+### Plex not seeing new movies
+1. Go to Plex settings → Libraries
+2. Find your Movies library
+3. Click the "..." menu → Scan Library Files
+
+## 📖 Documentation
+
+- `SERVER_SETUP.md` - Detailed server configuration guide
+- `AI_MOUNT_GUIDE.md` - AI search tips and examples
+
+## 🗂️ Project Structure
+
+### Core Scripts
+- `main.py` - Main entry point (unified interface)
+- `ai_mount_list.py` - AI-powered collection mounting
+- `stream_now.py` - Single movie mounting
+- `server_mount_plex.py` - Server-side mounting with Plex structure
+- `setup_server.py` - Server configuration wizard
+
+### Supporting Scripts
+- `vibe_streamer.py` - TMDB/Archive.org search utilities
+- `create_plex_library.py` - Local Plex library organizer
+
+## 🤝 Contributing
+
+This project mounts public domain content from Archive.org only. All content is legally available for streaming and downloading.
+
+## 📄 License
+
+MIT License - See LICENSE file for details
 
 ---
 
-## 🎬 Streaming Feature — Instant Playback
-
-**NEW!** Stream movies from Archive.org directly, no downloads required!
-
-### Quick Start
-
-Search for a movie and stream it instantly:
-
-```zsh
-python3 vibe_streamer.py "His Girl Friday" --stream
-```
-
-This will:
-1. Search TMDB for the movie
-2. Find a matching Archive.org item
-3. Launch VLC with the movie and subtitles loaded
-
-### Streaming Modes
-
-**Option 1: Integrated Search + Stream**
-```zsh
-# Search and play in one command
-python3 vibe_streamer.py "Charade" --stream
-
-# Search and mount for Plex
-python3 vibe_streamer.py "Night of the Living Dead" --plex
-```
-
-**Option 2: Direct Stream (if you know the Archive.org link)**
-```zsh
-# Quick play in VLC
-python3 stream_now.py --ia-link "https://archive.org/details/HisGirlFriday1940" --mode quick
-
-# Mount for Plex/Jellyfin
-python3 stream_now.py --ia-link "https://archive.org/details/HisGirlFriday1940" --mode plex
-```
-
-### Prerequisites
-
-**For Quick Play mode (VLC):**
-- VLC media player
-  ```zsh
-  brew install --cask vlc  # macOS
-  # or: sudo apt install vlc  # Linux
-  ```
-
-**For Plex mode (rclone mount):**
-- rclone
-  ```zsh
-  brew install rclone  # macOS
-  # or: curl https://rclone.org/install.sh | sudo bash  # Linux
-  ```
-- Optional: pysubs2 for subtitle conversion
-  ```zsh
-  pip install pysubs2
-  ```
-
-### Quick Play Mode
-
-Instantly play a movie with subtitles in VLC:
-
-```zsh
-python3 stream_now.py --ia-link "https://archive.org/details/HisGirlFriday1940" --mode quick
-```
-
-This will:
-1. Fetch Archive.org metadata
-2. Find the best video file (.mp4/.ogv)
-3. Find matching subtitles (.srt/.vtt)
-4. Launch VLC with both loaded
-
-### Plex/Jellyfin Mode
-
-Mount an Archive.org item as a local folder for streaming through Plex:
-
-```zsh
-python3 stream_now.py --ia-link "https://archive.org/details/HisGirlFriday1940" --mode plex
-```
-
-This will:
-1. Set up rclone HTTP remote
-2. Mount the item to `~/ArchiveMount/<identifier>`
-3. Print instructions to add the folder to Plex/Jellyfin
-
-### Managing Mounts
-
-Use the helper script to manage your Archive.org mounts:
-
-```zsh
-# List all active mounts
-python3 mount_archive.py list
-
-# Unmount a specific item
-python3 mount_archive.py unmount HisGirlFriday1940
-
-# Unmount all items
-python3 mount_archive.py unmount-all
-```
-
-### Examples
-
-**Classic films available on Archive.org:**
-```zsh
-# Night of the Living Dead (1968)
-python3 stream_now.py --ia-link "https://archive.org/details/night_of_the_living_dead" --mode quick
-
-# His Girl Friday (1940)
-python3 stream_now.py --ia-link "https://archive.org/details/HisGirlFriday1940" --mode quick
-
-# Charade (1963)
-python3 stream_now.py --ia-link "https://archive.org/details/Charade_201712" --mode plex
-```
-
-## 🤖 AI-Powered Batch Mount
-
-**NEW!** Describe what you want to watch and automatically mount multiple movies at once!
-
-### Quick Start
-
-```zsh
-# Interactive mode - just run it and describe what you want
-python3 ai_mount_list.py
-
-# Or provide the prompt directly
-python3 ai_mount_list.py --prompt "classic film noir from the 1940s"
-
-# Limit the number of results
-python3 ai_mount_list.py --prompt "sci-fi movies about AI" --limit 10
-
-# Skip confirmation prompt
-python3 ai_mount_list.py --prompt "hitchcock thrillers" --yes
-```
-
-### How It Works
-
-1. **Describe your mood**: Use natural language like:
-   - "classic film noir from the 1940s"
-   - "sci-fi movies about artificial intelligence"
-   - "comedies from the silent era"
-   - "hitchcock psychological thrillers"
-
-2. **AI finds matches**: Searches TMDB and Archive.org using your description
-
-3. **Organized collections**: Creates a descriptive subfolder for each search query
-   - `~/ArchiveMount/classic_film_noir_1940s/`
-   - `~/ArchiveMount/hitchcock_psychological_thrillers/`
-   - `~/ArchiveMount/silent_comedies_charlie_chaplin/`
-
-4. **Auto-mount**: Mounts up to 20 movies in the collection folder
-
-5. **Add to Plex**: Point your Plex library at the collection folder and scan
-
-### Example Session
-
-```zsh
-$ python3 ai_mount_list.py
-
-============================================================
-🎬  AI-POWERED MOVIE MOUNT LIST CREATOR  🎬
-============================================================
-
-📝 Describe the movies you're looking for:
-   Examples:
-   - 'classic film noir from the 1940s'
-   - 'sci-fi movies about artificial intelligence'
-
-Your description: classic film noir from the 1940s
-
-🔍 Searching for movies matching: 'classic film noir from the 1940s'...
-
-✨ Found 5 movies:
-
-#    Title                     Year   Identifier
-1    The Stranger              1946   TheStranger_0
-2    Scarlet Street            1945   ScarletStreet
-3    The Hitch-Hiker           1953   Hitch_Hiker
-4    The Chase                 1946   TheChase_
-5    His Girl Friday           1940   his_girl_friday
-
-🚀 Mount all 5 movies? (y/n): y
-
-[1/5] 🎬 Mounting: The Stranger
-      ✅ Successfully mounted
-
-📊 MOUNT SUMMARY
-Total movies:     5
-✅ Mounted:       5
-
-🎉 Successfully mounted movies are ready for Plex/Jellyfin!
-```
-
-### Options
-
-```zsh
---prompt "text"       # Natural language movie description
---limit N             # Max number of movies to find (default: 20)
---mount-base PATH     # Base directory for mounts (default: ~/ArchiveMount)
---yes, -y             # Skip confirmation prompt
-```
-
-### Managing Your Mounts
-
-Each search creates its own organized collection folder:
-
-```zsh
-~/ArchiveMount/
-├── classic_film_noir_1940s/
-│   ├── TheStranger_0/
-│   ├── ScarletStreet/
-│   └── Hitch_Hiker/
-├── hitchcock_psychological_thrillers/
-│   ├── spellbound1945_202001/
-│   └── gaslight-1944/
-└── silent_comedies_charlie_chaplin/
-    ├── Never_Weaken_1921/
-    └── TheAdventurer1917/
-```
-
-**Manage mounts:**
-```zsh
-# List all active mounts
-python3 mount_archive.py list
-
-# Unmount a specific movie
-python3 mount_archive.py unmount TheStranger_0
-
-# Unmount everything
-python3 mount_archive.py unmount-all
-```
-
-## Getting Started
-
-This project is set up with Git flow branching:
-- `main` - Production-ready code
-- `develop` - Integration branch for features
-- Feature branches - Individual features branched off develop
-
-## Development Workflow
-
-1. Create feature branches from `develop`
-2. Merge completed features back to `develop`
-3. When ready for release, merge `develop` to `main`
+**Note**: This tool only works with public domain movies available on Archive.org. It does not bypass any copyright protections or enable piracy.

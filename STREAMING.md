@@ -7,9 +7,10 @@ The streaming feature consists of three main components:
 ### 1. `stream_now.py` — Core Streaming Engine
 - **Metadata Resolution**: Fetches Archive.org item metadata via REST API
 - **File Selection**: Intelligently picks best video (.mp4, .ogv) and subtitle (.srt, .vtt) files
-- **Dual Output Modes**:
+- **Output Modes**:
   - **Quick Play**: Launches VLC with direct HTTP URLs (no download)
-  - **Plex Mode**: Mounts via rclone HTTP backend for Plex/Jellyfin
+  - **Plex Mode (local)**: Mounts via rclone HTTP backend on your machine for Plex/Jellyfin
+  - **Server Mode (remote)**: Sends a mount request to your configured server to mount the item remotely and create a Plex-compliant folder structure there
 
 ### 2. `vibe_streamer.py` — Integrated Workflow
 - Extended with `--stream` and `--plex` flags

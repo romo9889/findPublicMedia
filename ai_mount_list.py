@@ -516,6 +516,11 @@ def main(argv: list[str]) -> int:
         help="Maximum number of movies to find (default: 20)",
     )
     parser.add_argument(
+        "--server",
+        action="store_true",
+        help="Mount directly on the configured server (no local mounts)",
+    )
+    parser.add_argument(
         "--mount-base",
         default=str(Path.home() / "ArchiveMount"),
         help="Base directory for mounts (default: ~/ArchiveMount)",
@@ -570,12 +575,46 @@ def main(argv: list[str]) -> int:
     
     print(f"\n📁 Collection: '{collection_name}'")
     
-    # Mount movies
-    results = mount_movies(movies, mount_base)
-    
-    # Update Plex library
-    if results["mounted"] > 0:
-        update_plex_library()
+    # Server path: mount on remote server using server_mount_plex.py
+    if args.server:
+        # Build a minimal mount list payload for the server
+        mount_list = []
+        for m in movies:
+            if m.get("identifier"):
+                mount_list.append({
+                    "identifier": m["identifier"],
+                    "title": m.get("title", ""),
+                    "year": m.get("year")
+                })
+        # Save to mount_list.json in project root
+        ml_path = Path("mount_list.json")
+        with open(ml_path, "w") as f:
+            json.dump(mount_list, f, indent=2)
+        print(f"\n💾 Server mount list written to: {ml_path.resolve()}")
+
+        # Invoke server_mount_plex.py to create Plex structure remotely
+        try:
+            print("\n🚀 Mounting on server (Plex structure)...")
+            subprocess.run(
+                [sys.executable, str(Path(__file__).parent / "server_mount_plex.py"), "--json", str(ml_path)],
+                check=True
+            )
+            # Mark results as mounted for summary purposes
+            results = {
+                "total": len(movies),
+                "mounted": len([x for x in mount_list]),
+                "failed": 0,
+                "skipped": 0,
+                "details": mount_list,
+            }
+        except subprocess.CalledProcessError as e:
+            print("❌ Server mounting failed")
+            results = {"total": len(movies), "mounted": 0, "failed": len(movies), "skipped": 0, "details": []}
+    else:
+        # Local path: perform local rclone mounts and update local Plex
+        results = mount_movies(movies, mount_base)
+        if results["mounted"] > 0:
+            update_plex_library()
     
     # Summary
     print_summary(results, mount_base)

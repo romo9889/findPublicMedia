@@ -6,26 +6,41 @@ The AI Mount List feature allows you to use natural language to describe movies 
 
 ## Quick Start
 
-### Basic Usage
+### Using the Main App (Recommended)
 
 ```bash
-# Interactive mode - prompts you for description
-python3 ai_mount_list.py
+# Launch the unified interface
+python3 main.py
 
-# Command-line mode with prompt
+# Or use the shortcut
+./start.sh
+```
+
+Then select:
+1. "Mount a collection (AI search)"
+2. Choose server or local mounting
+3. Describe the movies you want
+
+### Direct Script Usage
+
+```bash
+# Mount on server
+python3 ai_mount_list.py --server --prompt "classic film noir from the 1940s"
+
+# Mount locally
 python3 ai_mount_list.py --prompt "classic film noir from the 1940s"
 ```
 
 ### Common Use Cases
 
 ```bash
-# Mount sci-fi movies (limit to 10)
-python3 ai_mount_list.py --prompt "sci-fi movies about AI" --limit 10
+# Mount sci-fi movies on server (limit to 10)
+python3 ai_mount_list.py --server --prompt "sci-fi movies about AI" --limit 10
 
-# Mount without confirmation prompt
+# Mount locally without confirmation prompt
 python3 ai_mount_list.py --prompt "hitchcock thrillers" --yes
 
-# Custom mount location
+# Custom mount location (local only)
 python3 ai_mount_list.py --prompt "silent comedies" --mount-base /Volumes/External/Movies
 ```
 
@@ -66,26 +81,38 @@ For each movie found:
 
 ### 5. Ready for Plex
 
-All mounted movies appear in `~/ArchiveMount/`:
+**Server mounting** creates Plex-compliant structure:
 ```
-~/ArchiveMount/
-├── TheStranger_0/
-│   ├── TheStranger_0.mp4
-│   ├── TheStranger_0.srt
-│   └── ...
-├── ScarletStreet/
-│   ├── ScarletStreet.mp4
-│   └── ...
-└── HitchHiker/
-    └── ...
+/home/root/PlexMovies/
+├── The Stranger (1946)/
+│   └── The Stranger (1946).mp4  → symlink to raw mount
+├── Scarlet Street (1945)/
+│   └── Scarlet Street (1945).mkv  → symlink
+└── ArchiveMount_raw/
+    ├── TheStranger_0/
+    │   └── [actual files]
+    └── ScarletStreet/
+        └── [actual files]
 ```
 
-Point your Plex library at `~/ArchiveMount/` and scan!
+**Local mounting** creates collection folders:
+```
+~/ArchiveMount/
+├── classic_film_noir_1940s/
+│   ├── TheStranger_0/
+│   ├── ScarletStreet/
+│   └── HitchHiker/
+└── hitchcock_thrillers/
+    ├── spellbound1945/
+    └── Vertigo1958/
+```
+
+Point your Plex library at the mount directory and scan!
 
 ## Command-Line Options
 
 ```
-usage: ai_mount_list.py [--prompt TEXT] [--limit N] [--mount-base PATH] [--yes]
+usage: ai_mount_list.py [--prompt TEXT] [--limit N] [--server] [--mount-base PATH] [--yes]
 
 Options:
   --prompt TEXT       Natural language movie description
@@ -95,8 +122,12 @@ Options:
                       Default: 20
                       Range: 1-100
   
-  --mount-base PATH   Base directory for mounts
+  --server            Mount on configured remote server instead of locally
+                      Creates Plex-compliant folder structure
+  
+  --mount-base PATH   Base directory for LOCAL mounts only
                       Default: ~/ArchiveMount
+                      Ignored when --server is used
   
   --yes, -y           Skip confirmation prompt
                       Mounts immediately without asking

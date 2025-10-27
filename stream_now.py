@@ -338,9 +338,9 @@ def main():
     )
     parser.add_argument(
         "--mode",
-        choices=["quick", "plex"],
+        choices=["quick", "plex", "server"],
         default="quick",
-        help="Playback mode: 'quick' (VLC) or 'plex' (rclone mount)"
+        help="Playback mode: 'quick' (VLC), 'plex' (local rclone mount), or 'server' (mount on remote server for Plex)"
     )
     
     args = parser.parse_args()
@@ -375,6 +375,26 @@ def main():
         quick_play_vlc(video_url, subtitle_url, os_type)
     elif args.mode == "plex":
         mount_for_plex(identifier, video_url, subtitle_url, os_type)
+    elif args.mode == "server":
+        # Mount directly on server using server_mount_plex.py
+        # Derive a reasonable title/year from metadata
+        meta = (metadata or {}).get("metadata", {})
+        title = meta.get("title") or identifier
+        year = str(meta.get("year")) if meta.get("year") else None
+        cmd = [
+            sys.executable,
+            str(Path(__file__).parent / "server_mount_plex.py"),
+            "--identifier", identifier,
+            "--title", title,
+        ]
+        if year:
+            cmd += ["--year", year]
+        log("mount", f"Mounting on server for Plex: {title} ({year or ''})")
+        try:
+            subprocess.run(cmd, check=True)
+            print("\n✅ Requested server mount. Add/refresh your Plex library to see it.")
+        except subprocess.CalledProcessError as e:
+            log("error", f"Server mount failed: {e}")
 
 
 if __name__ == "__main__":
