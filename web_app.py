@@ -186,7 +186,7 @@ if __name__ == '__main__':
     print("🎬  PUBLIC MEDIA MOUNTER - WEB INTERFACE")
     print("="*60)
     print("\n🌐 Starting web server...")
-    print("📍 Open your browser to: http://localhost:5000")
+    print("📍 Open your browser to: http://localhost:5001")
     print("\n💡 Press Ctrl+C to stop the server\n")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5001)
