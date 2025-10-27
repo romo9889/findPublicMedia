@@ -109,6 +109,23 @@ def index():
                          username=session.get('username'),
                          role=session.get('role'))
 
+def normalize_title(title, identifier=""):
+    """Normalize movie title for display."""
+    import re
+    # Remove Archive.org suffixes
+    cleaned = re.sub(r'_\d{6}$', '', title)
+    cleaned = re.sub(r'\s*\(.*?\)\s*$', '', cleaned)
+    
+    # If title is just the identifier, make it readable
+    if identifier and cleaned.lower().replace('_', '').replace('-', '') == identifier.lower().replace('_', '').replace('-', ''):
+        cleaned = identifier.replace('_', ' ').replace('-', ' ')
+        cleaned = ' '.join(word.capitalize() for word in cleaned.split())
+    
+    # Remove special characters
+    cleaned = re.sub(r'[<>:"/\\|?*\[\]]', '', cleaned)
+    
+    return cleaned.strip()
+
 @app.route('/api/search-movies', methods=['POST'])
 @login_required
 def search_movies():
@@ -116,6 +133,7 @@ def search_movies():
     data = request.json
     prompt = data.get('prompt', '').strip()
     limit = data.get('limit', 20)
+    single_mode = data.get('single_mode', False)  # New: single movie mode
     
     if not prompt:
         return jsonify({'error': 'No prompt provided'}), 400
@@ -124,6 +142,11 @@ def search_movies():
         # Import search functions
         sys.path.insert(0, str(Path(__file__).parent))
         from ai_mount_list import search_movies_by_description, resolve_archive_identifiers
+        from stream_now import fetch_metadata
+        
+        # For single mode, just search and return one result
+        if single_mode:
+            limit = 1
         
         # Search for movies
         movies = search_movies_by_description(prompt, limit)
@@ -131,11 +154,29 @@ def search_movies():
         # Resolve Archive.org identifiers
         movies = resolve_archive_identifiers(movies)
         
+        # Normalize titles and add metadata
+        for movie in movies:
+            if 'title' in movie:
+                movie['original_title'] = movie['title']
+                movie['title'] = normalize_title(movie['title'], movie.get('identifier', ''))
+            
+            # Try to fetch additional metadata from Archive.org
+            if 'identifier' in movie:
+                try:
+                    metadata = fetch_metadata(movie['identifier'])
+                    if metadata:
+                        movie['year'] = metadata.get('year')
+                        movie['description'] = metadata.get('description', '')[:200]
+                        movie['duration'] = metadata.get('runtime')
+                except:
+                    pass
+        
         # Return preview data
         return jsonify({
             'success': True,
             'movies': movies,
-            'count': len(movies)
+            'count': len(movies),
+            'single_mode': single_mode
         })
         
     except Exception as e:

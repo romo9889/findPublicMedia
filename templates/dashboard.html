@@ -380,22 +380,34 @@
         
         <div id="alertBox" class="alert"></div>
         
-        <div class="card">
-            <h2>🔍 Search Movies</h2>
+                <div class="card">
+            <h2>🎬 Find Movies</h2>
             <form id="searchForm">
                 <div class="form-group">
-                    <label for="prompt">Describe the movies you want:</label>
-                    <textarea 
-                        id="prompt" 
-                        name="prompt" 
-                        placeholder="e.g., classic film noir from the 1940s"
-                        required
-                    ></textarea>
+                    <label for="searchInput">Enter movie name or description</label>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="e.g., 'The Matrix' or 'classic sci-fi movies from the 1960s'"
+                        required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="limit">Number of results (1-50):</label>
-                    <input type="number" id="limit" name="limit" value="20" min="1" max="50">
+                    <label>Search Mode</label>
+                    <div style="display: flex; gap: 20px;">
+                        <div class="checkbox-group">
+                            <input type="radio" id="collectionMode" name="searchMode" value="collection" checked>
+                            <label for="collectionMode" style="margin-bottom: 0;">
+                                📚 Collection (up to 20 movies)
+                            </label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="radio" id="singleMode" name="searchMode" value="single">
+                            <label for="singleMode" style="margin-bottom: 0;">
+                                🎯 Single Movie
+                            </label>
+                        </div>
+                    </div>
                 </div>
                 
                 <button type="submit" class="button">🔎 Search</button>
@@ -515,8 +527,10 @@
         document.getElementById('searchForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const prompt = document.getElementById('prompt').value;
-            const limit = parseInt(document.getElementById('limit').value);
+            const prompt = document.getElementById('searchInput').value;
+            const searchMode = document.querySelector('input[name="searchMode"]:checked').value;
+            const singleMode = searchMode === 'single';
+            const limit = singleMode ? 1 : 20;
             
             setLoading(true);
             document.getElementById('resultsContainer').style.display = 'none';
@@ -525,7 +539,7 @@
                 const response = await fetch('/api/search-movies', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, limit })
+                    body: JSON.stringify({ prompt, limit, single_mode: singleMode })
                 });
                 
                 const data = await response.json();
@@ -556,13 +570,18 @@
                 const title = movie.title || 'Unknown Title';
                 const year = movie.year ? ` (${movie.year})` : '';
                 const identifier = movie.identifier || 'No ID';
+                const duration = movie.duration ? ` • ${movie.duration}` : '';
+                const description = movie.description ? `<div style="font-size: 0.85em; color: #777; margin-top: 5px;">${movie.description}</div>` : '';
                 
                 card.innerHTML = `
                     <div>
                         <input type="checkbox" id="movie_${idx}" onclick="event.stopPropagation()">
-                        <span class="movie-title">${title}${year}</span>
+                        <div>
+                            <div class="movie-title">${title}${year}</div>
+                            <div class="movie-meta">${identifier}${duration}</div>
+                            ${description}
+                        </div>
                     </div>
-                    <div class="movie-meta">${identifier}</div>
                 `;
                 
                 grid.appendChild(card);
