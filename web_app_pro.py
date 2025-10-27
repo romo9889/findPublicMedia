@@ -34,7 +34,9 @@ def load_users():
         with open(USERS_PATH) as f:
             return json.load(f)
     # Default admin user (change password immediately!)
-    return {"admin": {"password": "changeme", "role": "admin"}}
+    default_users = {"admin": {"password": "changeme", "role": "admin"}}
+    save_users(default_users)  # Create the file on first run
+    return default_users
 
 def save_users(users):
     with open(USERS_PATH, 'w') as f:
@@ -315,4 +317,5 @@ if __name__ == '__main__':
     socketio.run(app, 
                 debug=not production,
                 host='0.0.0.0' if production else '127.0.0.1',
-                port=int(os.environ.get('PORT', 5001)))
+                port=int(os.environ.get('PORT', 5001)),
+                allow_unsafe_werkzeug=True)  # Allow Werkzeug in production for simplicity
