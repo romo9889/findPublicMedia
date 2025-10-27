@@ -187,6 +187,8 @@
             padding: 15px;
             cursor: pointer;
             transition: all 0.3s;
+            display: flex;
+            gap: 15px;
         }
         
         .movie-card:hover {
@@ -201,17 +203,46 @@
         
         .movie-card input[type="checkbox"] {
             margin-right: 10px;
+            flex-shrink: 0;
+        }
+        
+        .movie-thumbnail {
+            width: 120px;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 6px;
+            flex-shrink: 0;
+            background: #e1e8ed;
+        }
+        
+        .movie-info {
+            flex: 1;
         }
         
         .movie-title {
             font-weight: 600;
             color: #333;
             margin-bottom: 5px;
+            font-size: 1.1em;
         }
         
         .movie-meta {
             font-size: 0.9em;
             color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .movie-meta-item {
+            display: inline-block;
+            margin-right: 15px;
+            margin-bottom: 4px;
+        }
+        
+        .movie-description {
+            font-size: 0.85em;
+            color: #777;
+            line-height: 1.4;
+            margin-top: 8px;
         }
         
         .mount-controls {
@@ -570,17 +601,30 @@
                 const title = movie.title || 'Unknown Title';
                 const year = movie.year ? ` (${movie.year})` : '';
                 const identifier = movie.identifier || 'No ID';
-                const duration = movie.duration ? ` • ${movie.duration}` : '';
-                const description = movie.description ? `<div style="font-size: 0.85em; color: #777; margin-top: 5px;">${movie.description}</div>` : '';
+                const thumbnail = movie.thumbnail || 'https://archive.org/images/notfound.png';
+                
+                // Build metadata line
+                let metaItems = [];
+                if (movie.year) metaItems.push(`📅 ${movie.year}`);
+                if (movie.duration) metaItems.push(`⏱️ ${movie.duration}`);
+                if (movie.rating) metaItems.push(`⭐ ${movie.rating}`);
+                if (movie.genre) metaItems.push(`🎭 ${movie.genre}`);
+                if (movie.director) metaItems.push(`🎬 ${movie.director}`);
+                if (movie.language) metaItems.push(`🌐 ${movie.language}`);
+                
+                const metaHTML = metaItems.map(item => `<span class="movie-meta-item">${item}</span>`).join('');
+                const description = movie.description ? `<div class="movie-description">${movie.description}</div>` : '';
                 
                 card.innerHTML = `
-                    <div>
-                        <input type="checkbox" id="movie_${idx}" onclick="event.stopPropagation()">
-                        <div>
-                            <div class="movie-title">${title}${year}</div>
-                            <div class="movie-meta">${identifier}${duration}</div>
-                            ${description}
+                    <input type="checkbox" id="movie_${idx}" onclick="event.stopPropagation()">
+                    <img src="${thumbnail}" class="movie-thumbnail" alt="${title}" onerror="this.src='https://archive.org/images/notfound.png'">
+                    <div class="movie-info">
+                        <div class="movie-title">${title}${year}</div>
+                        <div class="movie-meta">
+                            <div>${metaHTML}</div>
+                            <div style="margin-top: 5px; color: #999;">ID: ${identifier}</div>
                         </div>
+                        ${description}
                     </div>
                 `;
                 

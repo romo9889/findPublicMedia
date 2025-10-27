@@ -165,9 +165,23 @@ def search_movies():
                 try:
                     metadata = fetch_metadata(movie['identifier'])
                     if metadata:
-                        movie['year'] = metadata.get('year')
-                        movie['description'] = metadata.get('description', '')[:200]
-                        movie['duration'] = metadata.get('runtime')
+                        # Get metadata fields
+                        meta = metadata.get('metadata', {})
+                        
+                        # Basic info
+                        movie['year'] = meta.get('year') or meta.get('date', '')[:4] if meta.get('date') else None
+                        movie['description'] = meta.get('description', '')[:300] if meta.get('description') else ''
+                        movie['duration'] = meta.get('runtime')
+                        
+                        # Additional details
+                        movie['director'] = meta.get('director', '')
+                        movie['creator'] = meta.get('creator', '')
+                        movie['genre'] = ', '.join(meta.get('subject', [])) if isinstance(meta.get('subject'), list) else meta.get('subject', '')
+                        movie['language'] = meta.get('language', '')
+                        movie['rating'] = meta.get('stars')  # Archive.org community rating
+                        
+                        # Thumbnail - Archive.org format: https://archive.org/services/img/{identifier}
+                        movie['thumbnail'] = f"https://archive.org/services/img/{movie['identifier']}"
                 except:
                     pass
         
