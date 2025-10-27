@@ -9,7 +9,7 @@ WorkingDirectory=/opt/findPublicMedia
 Environment="PRODUCTION=true"
 Environment="SECRET_KEY=CHANGE_THIS_TO_A_RANDOM_SECRET_KEY"
 Environment="PORT=5001"
-ExecStart=/usr/bin/python3 /opt/findPublicMedia/web_app_pro.py
+ExecStart=/opt/findPublicMedia/venv/bin/python /opt/findPublicMedia/web_app_pro.py
 Restart=always
 RestartSec=10
 StandardOutput=journal

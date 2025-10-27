@@ -20,7 +20,7 @@ INSTALL_DIR="/opt/findPublicMedia"
 
 echo "📦 Installing dependencies..."
 apt update
-apt install -y python3 python3-pip git nginx certbot python3-certbot-nginx
+apt install -y python3 python3-pip python3-venv git nginx certbot python3-certbot-nginx
 
 echo ""
 echo "📥 Cloning repository..."
@@ -34,12 +34,18 @@ else
 fi
 
 echo ""
-echo "🐍 Installing Python packages..."
-python3 -m pip install -r requirements.txt
+echo "🐍 Setting up Python virtual environment..."
+if [ ! -d "$INSTALL_DIR/venv" ]; then
+    python3 -m venv "$INSTALL_DIR/venv"
+fi
+
+echo "📦 Installing Python packages..."
+"$INSTALL_DIR/venv/bin/pip" install --upgrade pip
+"$INSTALL_DIR/venv/bin/pip" install -r requirements.txt
 
 echo ""
 echo "🔑 Generating secret key..."
-SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+SECRET_KEY=$("$INSTALL_DIR/venv/bin/python" -c "import secrets; print(secrets.token_hex(32))")
 
 echo ""
 echo "📝 Setting up systemd service..."
