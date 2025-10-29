@@ -208,9 +208,15 @@ def search_movies_by_description(prompt: str, limit: int = 20) -> list:
     seen = set()
     unique_results = []
     for r in results:
-        title_key = r.get("title", "").lower().strip()
+        # Handle title being either string or list
+        title = r.get("title", "")
+        if isinstance(title, list):
+            title = title[0] if title else ""
+        title_key = str(title).lower().strip()
         if title_key and title_key not in seen:
             seen.add(title_key)
+            # Normalize title in result
+            r["title"] = str(title)
             unique_results.append(r)
     
     return unique_results[:limit]
